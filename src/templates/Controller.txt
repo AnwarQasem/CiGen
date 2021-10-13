@@ -1,0 +1,150 @@
+<?php namespace App\Controllers;
+
+use CodeIgniter\Controller;
+use App\Models\{model}Model as {model}Model;
+
+class {controller} extends Controller
+{
+
+    use \CodeIgniter\API\ResponseTrait;
+
+    protected $model;
+
+    public function index( $page = 1)
+    {
+        $page = (int) $page;
+        $model = new {model}Model;
+        $count = count($model->findAll());
+
+        $limit = 5;
+        $offset = $limit * ($page - 1);
+        $page_total = ceil($count / $limit);
+        $page_next = null;
+
+        if ($page + 1 <= $page_total) {
+            $page_next = $page + 1;
+        }
+
+        $page_prev = null;
+        if ($page - 1 != 0) {
+            $page_prev = $page - 1;
+        }
+
+
+        $meta = [
+            'page_current' => $page,
+            'page_total'   => $page_total,
+            'page_next'    => $page_next,
+            'page_prev'    => $page_prev,
+        ];
+
+        $data = $model->findAll($limit, $offset);
+
+        $result = [
+            'meta' => $meta,
+            'list' => $data
+        ];
+
+        return $this->validate_result($model, $result);
+    }
+
+    public function fields()
+    {
+        $db = \Config\Database::connect();
+        $fields = $db->getFieldData('{table}');
+
+        return $this->respond([
+            'result' => 'success',
+            'data'   => $fields
+        ]);
+    }
+
+    public function show($id)
+    {
+        $model = new {model}Model;
+
+        $temp_id = $model->find($id);
+        if (!$temp_id) {
+            return $this->fail('Not found', 200);
+        }
+
+        $result = $model->find($id);
+
+        return $this->validate_result($model, $result);
+    }
+
+    public function add()
+    {
+        $data = $this->request->getPost();
+
+        $model = new {model}Model;
+        $result = $model->insert($data);
+
+        return $this->validate_result($model, $result);
+    }
+
+    public function update($id)
+    {
+        $data = $this->request->getPost();
+
+        $model = new {model}Model;
+
+        $temp_id = $model->find($id);
+        if (!$temp_id) {
+            return $this->fail('Not found', 200);
+        }
+
+        $model->where('id', $id);
+        foreach ($data as $key => $val) {
+            $model->set($key, $val);
+        }
+        $result = $model->update();
+
+        return $this->validate_result($model, $result, $id);
+
+    }
+
+    public function delete($id)
+    {
+        $model = new {model}Model;
+
+        $temp_id = $model->find($id);
+        if (!$temp_id) {
+            return $this->fail('Not found', 200);
+        }
+
+        $result = $model->delete($id);
+
+        return $this->validate_result($model, $result);
+    }
+
+    private function validate_result($model, $result, $id = null)
+    {
+
+        if ($model->errors()) {
+            $this->fail($model->errors());
+        }
+
+        if (!$result) {
+            return $this->fail($model->errors(), 200);
+        }
+
+        if (is_integer($result)) {
+            $result = $model->find($result);
+        }
+
+        if ($id !== null) {
+            $result = $model->find($id);
+        }
+
+        if (isset($result->resultID)) {
+            $result = ['message' => "Deleted"];
+        }
+
+        return $this->respond([
+            'result' => 'success',
+            'data'   => $result
+        ]);
+    }
+
+}
