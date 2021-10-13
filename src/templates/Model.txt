@@ -1,6 +1,6 @@
 <?php namespace App\Models;
 
-use Muravian\CiGen\BaseModel;
+use Muravian\CiGen\Models\BaseModel;
 
 /**
  * @author Anwar Subhi <anwar.subhi@gmail.com>
