@@ -16,15 +16,21 @@ class CiGen{
 
     use ResponseTrait;
 
+    /**
+     * @var
+     */
     protected $tables;
 
+    /**
+     * Running the script.
+     */
     public function index()
     {
 
         $getTables = $this->get_tables();
 
         $exceptions = [
-            //'users'
+            'migrations'
         ];
 
         foreach ($getTables as $t => $table) {
@@ -35,61 +41,18 @@ class CiGen{
 
         $this->tables = $getTables;
 
-        $this->defineFields('users');
-
         $this->generateModels();
-        $this->generateRoutes();
-        $this->generateControllers();
     }
 
-    private function generateControllers()
-    {
-        $controllers_template = file_get_contents(FCPATH . "vendor/muravian/CiGen/templates/Controller.txt");
-
-        foreach ($this->tables as $table) {
-            $controllers_file = APPPATH . "/Controllers/" . ucfirst($table) . ".php";
-            if (!file_exists(ucfirst($controllers_file))) {
-                $model = $controllers_template;
-                $model = str_replace("{table}", $table, $model);
-                $model = str_replace("{model}", ucfirst($table), $model);
-                $model = str_replace("{controller}", ucfirst($table), $model);
-                $fh    = fopen($controllers_file, 'w');
-                fwrite($fh, $model);
-                fclose($fh);
-            }
-        }
-
-    }
-
-    private function generateRoutes()
-    {
-        $routes_file     = APPPATH . "/Config/development/Routes.php";
-        $routes_template = file_get_contents(FCPATH . "vendor/muravian/CiGen/templates/Routes.txt");
-
-
-        $routes = "<?php";
-        foreach ($this->tables as $table) {
-            $model = ucfirst($table);
-
-            $routes .= $routes_template;
-            $routes = str_replace("{table}", $table, $routes);
-            $routes = str_replace("{model}", $model, $routes);
-        }
-        print_r($routes_file);
-        $fh = fopen($routes_file, 'w');
-        fwrite($fh, $routes);
-        fclose($fh);
-
-    }
-
+    /**
+     * Generate Models
+     */
     private function generateModels()
     {
 
-        $model_template = file_get_contents(FCPATH . "vendor/muravian/CiGen/templates/Model.txt");
+        $model_template = file_get_contents(ROOTPATH  . "vendor/muravian/CiGen/src/templates/Model.txt");
 
         foreach ($this->tables as $table) {
-
-
             $model_file = APPPATH . "/Models/" . ucfirst($table) . "Model.php";
             if (!file_exists(ucfirst($model_file))) {
                 $model = $model_template;
@@ -109,6 +72,12 @@ class CiGen{
         }
     }
 
+    /**
+     * Define Fields
+     *
+     * @param $table
+     * @return array
+     */
     private function defineFields($table)
     {
         $returned_fields = [];
@@ -118,6 +87,12 @@ class CiGen{
         return $fields;
     }
 
+    /**
+     * Check for soft delete
+     *
+     * @param $table
+     * @return bool
+     */
     private function check_soft_delete($table)
     {
         $create = false;
@@ -144,6 +119,12 @@ class CiGen{
 
     }
 
+    /**
+     * Check allowed fields
+     *
+     * @param $table
+     * @return string
+     */
     private function allowed_fields($table) {
         $fields = $this->defineFields($table);
 
@@ -155,6 +136,11 @@ class CiGen{
         return "'" . implode("','", $allowed_fields) . "'";
     }
 
+    /**
+     * Get table list
+     *
+     * @return array|bool
+     */
     private function get_tables()
     {
         $db     = \Config\Database::connect();
