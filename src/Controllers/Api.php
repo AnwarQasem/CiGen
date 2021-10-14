@@ -6,6 +6,7 @@ use App\Controllers\BaseController;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
+use Config\Pager;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -42,6 +43,7 @@ class Api extends BaseController
     public function initController(RequestInterface $request, ResponseInterface $response, LoggerInterface $logger)
     {
         parent::initController($request, $response, $logger);
+
     }
 
     /**
@@ -50,21 +52,33 @@ class Api extends BaseController
      * @param string|null $table
      * @return object
      */
-    public function index(string $table = null): object
+    public function index(string $table = null)
     {
         $this->setDefauts($table);
 
-        $jsonReceived = $this->request->getJSON();
-        if(is_object($jsonReceived)) {
-            $this->model->like((array) $jsonReceived);
+        $search = json_decode($this->request->getVar('search'));
+        if(is_object($search)) {
+            $this->model->like((array) $search);
+        }
+
+        $sort = json_decode($this->request->getVar('sort'));
+        if(is_object($sort) && isset($sort->name)) {
+            $this->model->orderBy($sort->name, $sort->value);
+        }
+
+        $valuePerPage = null;
+        $perPage = $this->request->getVar('perPage');
+        if(isset($perPage) && strlen($perPage) > 0) {
+            $valuePerPage = (int) $perPage;
         }
 
         return $this->respond([
             'result' => 'success',
             'data'   => [
                 'fields' => $this->model->getFieldData(),
-                'list'   => $this->model->paginate(),
-                'pager'  => $this->model->pager->getDetails()
+                'list'   => $this->model->paginate($valuePerPage),
+                'pager'  => $this->model->pager->getDetails(),
+                'perPage' => ['20', '50', '100']
             ]
         ], 200);
     }
@@ -76,7 +90,7 @@ class Api extends BaseController
      * @param int $id
      * @return object
      */
-    public function show(string $table, int $id): object
+    public function show(string $table, int $id)
     {
         $this->setDefauts($table);
 
@@ -95,7 +109,7 @@ class Api extends BaseController
      * @param string $table
      * @return object
      */
-    public function create(string $table): object
+    public function create(string $table)
     {
         $this->setDefauts($table);
 
@@ -118,7 +132,7 @@ class Api extends BaseController
      * @param int $id
      * @return object
      */
-    public function update(string $table, int $id): object
+    public function update(string $table, int $id)
     {
         $this->setDefauts($table);
 
@@ -156,12 +170,34 @@ class Api extends BaseController
     }
 
     /**
+     * Delete Bulk
+     *
+     * @param string $table
+     * @return mixed
+     */
+    public function deleteBulk(string $table)
+    {
+        $this->setDefauts($table);
+
+        $jsonReceived = $this->request->getJSON();
+
+        $result = $this->model->delete($jsonReceived);
+
+        return $this->respond([
+            'result' => 'success',
+            'data'   => [
+                'deleted' => $result
+            ]
+        ], 200);
+    }
+
+    /**
      * Get fields for table
      *
      * @param string $table
      * @return object
      */
-    public function fields(string $table): object
+    public function fields(string $table)
     {
 
         $this->setDefauts($table);

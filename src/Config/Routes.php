@@ -10,9 +10,6 @@ $routes->group('api', function ($routes) {
     // Show single
     $routes->get('(:segment)/(:num)', '\Muravian\CiGen\Controllers\Api::show/$1/$2');
 
-    // Search
-    $routes->post('(:segment)/search', '\Muravian\CiGen\Controllers\Api::search/$1');
-
     // Create
     $routes->put('(:segment)/create', '\Muravian\CiGen\Controllers\Api::create/$1');
 
