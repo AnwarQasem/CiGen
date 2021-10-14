@@ -25,4 +25,7 @@ $routes->group('api', function ($routes) {
     // Delete Bulk
     $routes->post('(:segment)/delete/', '\Muravian\CiGen\Controllers\Api::deleteBulk/$1');
 
+    // Fields
+    $routes->get("(:segment)/fields", "\Muravian\CiGen\Controllers\Api::fields/$1");
+
 });

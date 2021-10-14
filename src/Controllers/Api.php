@@ -156,6 +156,25 @@ class Api extends BaseController
     }
 
     /**
+     * Get fields for table
+     *
+     * @param string $table
+     * @return object
+     */
+    public function fields(string $table): object
+    {
+
+        $this->setDefauts($table);
+
+        return $this->respond([
+            'result' => 'success',
+            'data'   => [
+                'fields' => $this->model->getFieldData()
+            ]
+        ], 200);
+    }
+
+    /**
      * Simple page answering to /
      *
      * @return mixed
