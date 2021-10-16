@@ -54,7 +54,7 @@ class CiGen{
     private function generateModels()
     {
 
-        $model_template = file_get_contents(ROOTPATH  . "vendor/muravian/CiGen/src/templates/Model.txt");
+        $model_template = file_get_contents(ROOTPATH  . "vendor/muravian/cigen/src/templates/Model.txt");
 
         foreach ($this->tables as $table) {
             $model_file = APPPATH . "/Models/" . ucfirst($table) . "Model.php";
