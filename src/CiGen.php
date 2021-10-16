@@ -30,7 +30,11 @@ class CiGen{
         $getTables = $this->get_tables();
 
         $exceptions = [
-            'migrations'
+            'migrations',
+            'users',
+            'users_groups',
+            'users_token',
+            'groups'
         ];
 
         foreach ($getTables as $t => $table) {
