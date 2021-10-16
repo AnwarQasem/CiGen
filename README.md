@@ -19,15 +19,9 @@ Once installed you need to make sure that you connected to db and created your t
 
 CiGen will generate models that will extend a base model in your app folder.
 
-To run the generator you'll need the following code somewhere in your controllers: 
-```injectablephp
-use \Muravia\CiGen\CiGen; // at top
-// And this somewhere in your controller
-
-$cigen = new CiGen();
-$cigen->index();
+To run the generator you'll need to:
+```shell
+php spark cigen:publish
 ```
-
-Run your controller and that's it. Your files are generated.
 
 After this you can successfully install https://www.npmjs.com/package/react-datatable-crud and enjoy your REACT DATATABLE CRUD component with backend API in Codeigniter. 
