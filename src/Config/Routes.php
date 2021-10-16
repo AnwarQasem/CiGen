@@ -1,9 +1,5 @@
 <?php
 
-use Config;
-
-$routes = Services::routes();
-
 $routes->group('api', function ($routes) {
 
     $routes->add('', '\Muravian\CiGen\Controllers\Api::defaultAnswer');
