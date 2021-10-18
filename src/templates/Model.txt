@@ -14,6 +14,7 @@ class {model}Model extends BaseModel
         /* Apply your default settings for the model here */
 
         $this->setUseSoftDeletes({use_soft_delete});
+        $this->setUseTimestamps({use_soft_delete})
         $this->setAllowedFields([{allowed_fields}]);
     }
 
