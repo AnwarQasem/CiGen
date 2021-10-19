@@ -213,6 +213,8 @@ class Api extends BaseController
     public function file_upload($table, $id, $field) {
         $file = $this->request->getFile('files')->store();
 
+        $this->model->where('id', $id)->update([$field => $file ]);
+
         return $this->respond([ 
             'result' => 'success', 
             'data'   => $file
