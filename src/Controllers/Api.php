@@ -1,4 +1,5 @@
 <?php
+
 namespace Muravian\CiGen\Controllers;
 
 use CodeIgniter\CodeIgniter;
@@ -57,27 +58,27 @@ class Api extends BaseController
         $this->setDefauts($table);
 
         $search = json_decode($this->request->getVar('search'));
-        if(is_object($search)) {
-            $this->model->like((array) $search);
+        if (is_object($search)) {
+            $this->model->like((array)$search);
         }
 
         $sort = json_decode($this->request->getVar('sort'));
-        if(is_object($sort) && isset($sort->name)) {
+        if (is_object($sort) && isset($sort->name)) {
             $this->model->orderBy($sort->name, $sort->value);
         }
 
         $valuePerPage = null;
-        $perPage = $this->request->getVar('perPage');
-        if(isset($perPage) && strlen($perPage) > 0) {
-            $valuePerPage = (int) $perPage;
+        $perPage      = $this->request->getVar('perPage');
+        if (isset($perPage) && strlen($perPage) > 0) {
+            $valuePerPage = (int)$perPage;
         }
 
         return $this->respond([
             'result' => 'success',
             'data'   => [
-                'fields' => $this->model->getFieldData(),
-                'list'   => $this->model->paginate($valuePerPage),
-                'pager'  => $this->model->pager->getDetails(),
+                'fields'  => $this->model->getFieldData(),
+                'list'    => $this->model->paginate($valuePerPage),
+                'pager'   => $this->model->pager->getDetails(),
                 'perPage' => ['20', '50', '100']
             ]
         ], 200);
@@ -138,7 +139,7 @@ class Api extends BaseController
 
         $jsonReceived = $this->request->getJSON();
 
-        $result = $this->model->set((array) $jsonReceived)->where('id', $id)->update();
+        $result = $this->model->set((array)$jsonReceived)->where('id', $id)->update();
 
         return $this->respond([
             'result' => 'success',
@@ -210,18 +211,21 @@ class Api extends BaseController
         ], 200);
     }
 
-    public function file_upload($table, $id, $field) {
-        $file = $this->request->getFile('files')->store();
+    public function file_upload($table, $id, $field)
+    {
+        $this->setDefauts($table);
+        $file = $this->request->getFile('files')->store('auth_profiles/');
 
-        $this->model->where('id', $id)->update([$field => $file ]);
+        $this->model->where('id', $id)->update([$field => $file]);
 
-        return $this->respond([ 
+        return $this->respond([
             'result' => 'success', 
             'data'   => $file
         ], 200);
     }
 
-    public function file_delete($table, $id, $field) {
+    public function file_delete($table, $id, $field)
+    {
 
     }
 
@@ -230,10 +234,11 @@ class Api extends BaseController
      *
      * @return mixed
      */
-    public function defaultAnswer() {
+    public function defaultAnswer()
+    {
         return $this->respond([
-            'result' => 'success',
-            'message'   => ["API Working ... "]
+            'result'  => 'success',
+            'message' => ["API Working ... "]
         ], 200);
     }
 
@@ -242,7 +247,8 @@ class Api extends BaseController
      *
      * @param $table
      */
-    private function setDefauts($table) {
+    private function setDefauts($table)
+    {
         $this->model = model(ucfirst($table) . "Model");
         $this->table = $table;
     }
