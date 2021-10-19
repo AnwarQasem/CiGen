@@ -210,6 +210,19 @@ class Api extends BaseController
         ], 200);
     }
 
+    public function file_upload($table, $id, $field) {
+        $file = $this->request->getFile('files')->store();
+
+        return $this->respond([ 
+            'result' => 'success', 
+            'data'   => $file
+        ], 200);
+    }
+
+    public function file_delete($table, $id, $field) {
+
+    }
+
     /**
      * Simple page answering to /
      *
