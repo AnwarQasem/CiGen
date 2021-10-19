@@ -216,10 +216,10 @@ class Api extends BaseController
         $this->setDefauts($table);
         $file = $this->request->getFile('files')->store('auth_profiles/');
 
-        $this->model->where('id', $id)->update([$field => $file]);
+        $this->model->where('id', $id)->set($field, $file)->update();
 
         return $this->respond([
-            'result' => 'success', 
+            'result' => 'success',
             'data'   => $file
         ], 200);
     }
