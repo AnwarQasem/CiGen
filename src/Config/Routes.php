@@ -4,7 +4,7 @@ $routes->group('api', function ($routes) {
 
     $routes->add('', '\Muravian\CiGen\Controllers\Api::defaultAnswer');
 
-    $routes->get("(:segment)", "\Muravian\CiGen\Controllers\Api::index/$1/$2"); // Index
+    $routes->get("(:segment)", "\Muravian\CiGen\Controllers\Api::index/$1"); // Index
     $routes->get('(:segment)/(:num)', '\Muravian\CiGen\Controllers\Api::show/$1/$2'); // Show single
     $routes->get("(:segment)/fields", "\Muravian\CiGen\Controllers\Api::fields/$1"); // Fields
 
@@ -18,4 +18,7 @@ $routes->group('api', function ($routes) {
     $routes->post('(:segment)', '\Muravian\CiGen\Controllers\Api::deleteBulk/$1'); // Delete Bulk
     $routes->post('(:segment)/(:num)/(:segment)', "\Muravian\CiGen\Controllers\Api::file_upload/$1/$2/$3"); // Upload
 
+    // Download or view Files.
+    $routes->get('img/(:segment)/(:segment)', '\Muravian\CiGen\Controllers\Api::file_get/$1/$2');
+    $routes->get('(:segment)/export/(:segment)', '\Muravian\CiGen\Controllers\Api::file_export/$1/$2');
 });

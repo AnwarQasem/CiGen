@@ -155,7 +155,7 @@ class BaseModel extends Model
             }
         }
 
-        return $fields;
+        return array_values($fields);
     }
 
     // SET TABLE DETAILS
@@ -236,9 +236,9 @@ class BaseModel extends Model
      *
      * @param array $removeFields
      */
-    public function setRemoveFields(array $removeFields): void
+    public function setRemoveFields(string $removeFields): void
     {
-        $this->removeFields = $removeFields;
+        $this->removeFields[] = $removeFields;
     }
 
     /**
@@ -346,9 +346,9 @@ class BaseModel extends Model
      *
      * @param array $beforeInsert
      */
-    public function setBeforeInsert(array $beforeInsert): void
+    public function setBeforeInsert(string $beforeInsert): void
     {
-        $this->beforeInsert = $beforeInsert;
+        $this->beforeInsert[] = $beforeInsert;
     }
 
     /**
@@ -356,9 +356,9 @@ class BaseModel extends Model
      *
      * @param array $afterInsert
      */
-    public function setAfterInsert(array $afterInsert): void
+    public function setAfterInsert(string $afterInsert): void
     {
-        $this->afterInsert = $afterInsert;
+        $this->afterInsert[] = $afterInsert;
     }
 
     /**
@@ -366,9 +366,9 @@ class BaseModel extends Model
      *
      * @param array $beforeUpdate
      */
-    public function setBeforeUpdate(array $beforeUpdate): void
+    public function setBeforeUpdate(string $beforeUpdate): void
     {
-        $this->beforeUpdate = $beforeUpdate;
+        $this->beforeUpdate[] = $beforeUpdate;
     }
 
     /**
@@ -376,9 +376,9 @@ class BaseModel extends Model
      *
      * @param array $afterUpdate
      */
-    public function setAfterUpdate(array $afterUpdate): void
+    public function setAfterUpdate(string $afterUpdate): void
     {
-        $this->afterUpdate = $afterUpdate;
+        $this->afterUpdate[] = $afterUpdate;
     }
 
     /**
@@ -386,9 +386,9 @@ class BaseModel extends Model
      *
      * @param array $beforeFind
      */
-    public function setBeforeFind(array $beforeFind): void
+    public function setBeforeFind(string $beforeFind): void
     {
-        $this->beforeFind = $beforeFind;
+        $this->beforeFind[] = $beforeFind;
     }
 
     /**
@@ -396,9 +396,9 @@ class BaseModel extends Model
      *
      * @param string[] $afterFind
      */
-    public function setAfterFind(array $afterFind): void
+    public function setAfterFind(string $afterFind): void
     {
-        $this->afterFind = $afterFind;
+        $this->afterFind[] = $afterFind;
     }
 
     /**
@@ -406,9 +406,9 @@ class BaseModel extends Model
      *
      * @param array $beforeDelete
      */
-    public function setBeforeDelete(array $beforeDelete): void
+    public function setBeforeDelete(string $beforeDelete): void
     {
-        $this->beforeDelete = $beforeDelete;
+        $this->beforeDelete[] = $beforeDelete;
     }
 
     /**
@@ -416,9 +416,9 @@ class BaseModel extends Model
      *
      * @param array $afterDelete
      */
-    public function setAfterDelete(array $afterDelete): void
+    public function setAfterDelete(string $afterDelete): void
     {
-        $this->afterDelete = $afterDelete;
+        $this->afterDelete[] = $afterDelete;
     }
 
 
