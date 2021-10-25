@@ -306,6 +306,49 @@ class Api extends BaseController
         return $df;
     }
 
+    public function get_import_map($table)
+    {
+        $this->setDefauts($table);
+        $jsonReceived = $this->request->getJSON();
+
+        $data = $this->model->where('json', json_encode($jsonReceived))->first();
+
+        return $this->respond([
+            'result' => 'success',
+            'data'   => $data
+        ], 200);
+    }
+
+    public function put_import_map($table)
+    {
+        $this->setDefauts($table);
+        $jsonReceived = $this->request->getJSON();
+        $data         = [
+            'table' => $table,
+            'json'  => $jsonReceived->json,
+            'data'  => $jsonReceived->data
+        ];
+
+        $inserted_id = $this->model->insert($data);
+
+        return $this->respond([
+            'result' => 'success',
+            'data'   => [
+                'inserted_id' => $data
+            ]
+        ], 200);
+    }
+
+    public function delete_import_map($table)
+    {
+        $this->setDefauts($table);
+    }
+
+    public function put_import($table)
+    {
+        $this->setDefauts($table);
+    }
+
     /**
      * Simple page answering to /
      *
