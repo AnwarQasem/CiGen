@@ -22,11 +22,6 @@ $routes->group('api', function ($routes) {
     $routes->get('img/(:segment)/(:segment)', '\Muravian\CiGen\Controllers\Api::file_get/$1/$2');
     $routes->get('(:segment)/export/(:segment)', '\Muravian\CiGen\Controllers\Api::file_export/$1/$2');
 
-    // Import MAP
-    $routes->post   ('(:segment)/import/map', '\Muravian\CiGen\Controllers\Api::get_import_map/$1');
-    $routes->put('(:segment)/import/map', '\Muravian\CiGen\Controllers\Api::put_import_map/$1');
-    $routes->delete('(:segment)/import/map', '\Muravian\CiGen\Controllers\Api::delete_import_map/$1');
-
     // Import FILE
-    $routes->put('(:segment)/import', '\Muravian\CiGen\Controllers\Api::put_import/$1');
+    $routes->post('(:segment)/import/(:num)', '\Muravian\CiGen\Controllers\Api::put_import/$1/$2');
 });
