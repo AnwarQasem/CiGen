@@ -5,11 +5,15 @@ namespace Muravian\CiGen\Controllers;
 use CodeIgniter\CodeIgniter;
 use App\Controllers\BaseController;
 use CodeIgniter\API\ResponseTrait;
+use CodeIgniter\Files\File;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
 use Config\Pager;
 use App\Models;
 use Psr\Log\LoggerInterface;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+
 
 /**
  * Api class to work with the CRUD React DataTable
@@ -36,6 +40,24 @@ class Api extends BaseController
     protected $table;
 
     /**
+     * @var string[]
+     */
+    protected $validationRules = [
+        'email'        => 'valid_email|is_unique[users.email]',
+        'password'     => 'min_length[8]',
+    ];
+
+    /**
+     * @var \string[][]
+     */
+    protected $validationMessages = [
+        'email' => [
+            'valid_email' => 'email not valid',
+            'is_unique' => 'email not unique'
+        ]
+    ];
+
+    /**
      * Extending BaseController
      *
      * @param RequestInterface $request
@@ -59,9 +81,7 @@ class Api extends BaseController
         $this->setDefauts($table);
 
         $search = json_decode($this->request->getVar('search'));
-        if (is_object($search)) {
-            $this->model->like((array)$search);
-        }
+        $this->model->like((array)$search);
 
         $sort = json_decode($this->request->getVar('sort'));
         if (is_object($sort) && isset($sort->name)) {
@@ -117,14 +137,26 @@ class Api extends BaseController
 
         $jsonReceived = $this->request->getJSON();
 
+//        $this->model->setValidationRules($this->validationRules);
+//        $this->model->setValidationMessages($this->validationMessages);
+
         $result = $this->model->insert($jsonReceived);
 
-        return $this->respond([
-            'result' => 'success',
-            'data'   => [
-                'inserted_id' => $result
-            ]
-        ], 200);
+        if($result) {
+            return $this->respond([
+                'result' => 'success',
+                'data'   => [
+                    'inserted_id' => $result,
+                ]
+            ], 200);
+        } else{
+            return $this->respond([
+                'result' => 'error',
+                'data'   => [
+                    'messages' => $this->model->validation->getErrors()
+                ]
+            ], 200);
+        }
     }
 
     /**
@@ -212,6 +244,14 @@ class Api extends BaseController
         ], 200);
     }
 
+    /**
+     * Upload File
+     *
+     * @param $table
+     * @param $id
+     * @param $field
+     * @return mixed
+     */
     public function file_upload($table, $id, $field)
     {
         $this->setDefauts($table);
@@ -225,14 +265,22 @@ class Api extends BaseController
         ], 200);
     }
 
+    /**
+     * Delete File
+     *
+     * @param $table
+     * @param $id
+     * @param $field
+     * @return mixed
+     */
     public function file_delete($table, $id, $field)
     {
         $this->setDefauts($table);
         $row = $this->model->where('id', $id)->first();
 
         $file_path = $row->$field;
-//        unlink($file_path);
-//
+        unlink($file_path);
+
         $this->model->set($field, null)->update();
 
         return $this->respond([
@@ -241,6 +289,12 @@ class Api extends BaseController
         ], 200);
     }
 
+    /**
+     * Get File
+     *
+     * @param $path
+     * @param $file
+     */
     public function file_get($path, $file)
     {
 
@@ -257,6 +311,12 @@ class Api extends BaseController
             ->send();
     }
 
+    /**
+     * Export File
+     *
+     * @param $table
+     * @param $type
+     */
     public function file_export($table, $type)
     {
         $this->setDefauts($table);
@@ -274,13 +334,22 @@ class Api extends BaseController
         switch ($type) {
             case 'csv':
                 $obj = $this->model->find();
-                foreach($obj as $value) { $array[] = (array) $value; }
+                foreach ($obj as $value) {
+                    $array[] = (array)$value;
+                }
                 $this->export_csv($table, $array);
                 break;
         }
 
     }
 
+    /**
+     * Export CSV
+     *
+     * @param $table
+     * @param $data
+     * @return \CodeIgniter\HTTP\DownloadResponse|null
+     */
     private function export_csv($table, $data)
     {
         $csv = $this->array2csv($data);
@@ -291,6 +360,12 @@ class Api extends BaseController
             ->download();
     }
 
+    /**
+     * Convert array to csv
+     *
+     * @param array $array
+     * @return false|resource|null
+     */
     function array2csv(array &$array)
     {
         if (count($array) == 0) {
@@ -306,12 +381,17 @@ class Api extends BaseController
         return $df;
     }
 
-    public function get_import_map($table)
+    /**
+     * Get import map
+     *
+     * @return mixed
+     */
+    public function get_import_map()
     {
-        $this->setDefauts($table);
+        $this->setDefauts('import_map');
         $jsonReceived = $this->request->getJSON();
 
-        $data = $this->model->where('json', json_encode($jsonReceived))->first();
+        $data = $this->model->select('data')->where('json', $jsonReceived)->first();
 
         return $this->respond([
             'result' => 'success',
@@ -319,6 +399,12 @@ class Api extends BaseController
         ], 200);
     }
 
+    /**
+     * Save import map
+     *
+     * @param $table
+     * @return mixed
+     */
     public function put_import_map($table)
     {
         $this->setDefauts($table);
@@ -339,14 +425,122 @@ class Api extends BaseController
         ], 200);
     }
 
-    public function delete_import_map($table)
+    /**
+     * Save import
+     *
+     * @param $table
+     * @param $map_id
+     * @return mixed
+     */
+    public function put_import($table, $map_id)
     {
+        $data   = $this->getImportData();
+        $filter = $this->getFilters($map_id);
+
+        $newData = [];
+        foreach ($data as $key => $val) {
+            foreach ($val as $k => $v) {
+                $newKey = $this->returnKey($filter, $k);
+                $newData[$key][$newKey] = $v;
+            }
+        }
+
         $this->setDefauts($table);
+        return $this->respond([
+            'result' => 'success',
+            'data'   => [
+                'inserted_id' => $this->model->insertBatch($newData)
+            ]
+        ], 200);
     }
 
-    public function put_import($table)
+    /**
+     * Get filters
+     *
+     * @param $map_id
+     * @return mixed
+     */
+    private function getFilters($map_id)
     {
-        $this->setDefauts($table);
+        $this->setDefauts('import_map');
+        $filters = $this->model->select('data')->where('id', $map_id)->first();
+        $filters = json_decode($filters->data);
+
+        return $filters;
+    }
+
+    /**
+     * Return key of object
+     *
+     * @param $obj
+     * @param $search
+     * @return false
+     */
+    private function returnKey($obj, $search)
+    {
+        $result = false;
+
+        foreach ($obj as $value) {
+            if (is_object($value->value) && $value->value->value === $search) {
+                $result = $value->index;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get imported data
+     *
+     * @return array
+     * @throws \PhpOffice\PhpSpreadsheet\Exception
+     */
+    private function getImportData()
+    {
+        $data         = [];
+        $uploadedFile = $this->request->getFile('files')->store('imported_files/');
+        $file_path    = ROOTPATH . "writable/uploads/" . $uploadedFile;
+
+        $file = new File($file_path);
+
+        $mime = $file->getMimeType();
+        $ext  = $file->guessExtension();
+
+        if ($mime === 'application/vnd.ms-excel' && $ext === 'csv') {
+            $reader      = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+            $spreadsheet = $reader->load($file_path);
+
+            $array = $spreadsheet->getSheet(0)->toArray();
+        }
+
+        if ($mime === 'text/plain' && $ext === 'csv') {
+            $array = array_map('str_getcsv', file($file_path));
+        }
+
+        $headers = $array[0];
+        unset($array[0]);
+
+        $data = $this->arrangeArray($array, $headers);
+
+        return $data;
+    }
+
+    /**
+     * Arrange array for bulk import
+     *
+     * @param $array
+     * @param $headers
+     * @return array
+     */
+    private function arrangeArray($array, $headers)
+    {
+        $newArray = [];
+        foreach ($array as $key => $value) {
+            foreach ($value as $k => $v) {
+                $newArray[$key][$headers[$k]] = $v;
+            }
+        }
+        return array_values($newArray);
     }
 
     /**
