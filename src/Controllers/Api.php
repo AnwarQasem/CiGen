@@ -13,6 +13,7 @@ use App\Models;
 use Psr\Log\LoggerInterface;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use SimpleXLSX;
 
 
 /**
@@ -43,8 +44,8 @@ class Api extends BaseController
      * @var string[]
      */
     protected $validationRules = [
-        'email'        => 'valid_email|is_unique[users.email]',
-        'password'     => 'min_length[8]',
+        'email'    => 'valid_email|is_unique[users.email]',
+        'password' => 'min_length[8]',
     ];
 
     /**
@@ -53,7 +54,7 @@ class Api extends BaseController
     protected $validationMessages = [
         'email' => [
             'valid_email' => 'email not valid',
-            'is_unique' => 'email not unique'
+            'is_unique'   => 'email not unique'
         ]
     ];
 
@@ -142,14 +143,14 @@ class Api extends BaseController
 
         $result = $this->model->insert($jsonReceived);
 
-        if($result) {
+        if ($result) {
             return $this->respond([
                 'result' => 'success',
                 'data'   => [
                     'inserted_id' => $result,
                 ]
             ], 200);
-        } else{
+        } else {
             return $this->respond([
                 'result' => 'error',
                 'data'   => [
@@ -441,15 +442,26 @@ class Api extends BaseController
         foreach ($data as $key => $val) {
             foreach ($val as $k => $v) {
                 $newKey = $this->returnKey($filter, $k);
-                $newData[$key][$newKey] = $v;
+                if ($newKey) {
+                    $newData[$key][$newKey] = $v;
+                }
             }
         }
-
         $this->setDefauts($table);
+
+//        $newData = $this->removeDuplicates('cui', $newData);
+//        $newData = $this->removeDbDuplicates('cui', $newData);
+
+        if(count($newData) > 0) {
+            $result = $this->model->insertBatch($newData);
+        } else {
+            $result = "Data already in database";
+        }
+
         return $this->respond([
             'result' => 'success',
             'data'   => [
-                'inserted_id' => $this->model->insertBatch($newData)
+                'inserted_rows' => $result
             ]
         ], 200);
     }
@@ -506,6 +518,12 @@ class Api extends BaseController
         $mime = $file->getMimeType();
         $ext  = $file->guessExtension();
 
+
+        if ($mime === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' && $ext === 'xlsx') {
+            $reader      = new SimpleXLSX($file_path);
+            $array = $reader->rows();
+        }
+
         if ($mime === 'application/vnd.ms-excel' && $ext === 'csv') {
             $reader      = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
             $spreadsheet = $reader->load($file_path);
@@ -514,12 +532,16 @@ class Api extends BaseController
         }
 
         if ($mime === 'text/plain' && $ext === 'csv') {
-            $array = array_map('str_getcsv', file($file_path));
+            $delimiter  = $this->getFileDelimiter($file_path);
+            $csv_string = file_get_contents($file_path);
+            $array      = $this->csv_to_array($csv_string, $delimiter);
+            // $array = array_map('str_getcsv', file($file_path));
         }
+
+
 
         $headers = $array[0];
         unset($array[0]);
-
         $data = $this->arrangeArray($array, $headers);
 
         return $data;
@@ -534,6 +556,7 @@ class Api extends BaseController
      */
     private function arrangeArray($array, $headers)
     {
+
         $newArray = [];
         foreach ($array as $key => $value) {
             foreach ($value as $k => $v) {
@@ -556,6 +579,37 @@ class Api extends BaseController
         ], 200);
     }
 
+    private function removeDbDuplicates($key, $array)
+    {
+        $temp_keys = [];
+        foreach ($array as $v) {
+            $temp_keys[] = $v[$key];
+        }
+
+        foreach ($array as $k => $v) {
+            $count = $this->model->where($key, $v[$key])->limit(1)->countAllResults();
+            if($count > 0) {
+                unset($array[$k]);
+            }
+        }
+
+        return array_values($array);
+    }
+
+    private function removeDuplicates($key, $array)
+    {
+        $t_arr = [];
+        foreach ($array as $k => $v) {
+            if (in_array($v[$key], $t_arr)) {
+                unset($array[$k]);
+            } else {
+                $t_arr[] = $v[$key];
+            }
+        }
+
+        return array_values($array);
+    }
+
     /**
      * Setting up Table & Model
      *
@@ -565,6 +619,64 @@ class Api extends BaseController
     {
         $this->model = model(ucfirst($table) . "Model");
         $this->table = $table;
+    }
+
+    private function getFileDelimiter($file, $checkLines = 2)
+    {
+        $file       = new \SplFileObject($file);
+        $delimiters = [',', '\t', ';', '|', ':'];
+        $results    = [];
+        $i          = 0;
+
+        while ($file->valid() && $i <= $checkLines) {
+            $line = $file->fgets();
+            foreach ($delimiters as $delimiter) {
+                $regExp = '/[' . $delimiter . ']/';
+                $fields = preg_split($regExp, $line);
+                if (count($fields) > 1) {
+                    if (!empty($results[$delimiter])) {
+                        $results[$delimiter]++;
+                    } else {
+                        $results[$delimiter] = 1;
+                    }
+                }
+            }
+            $i++;
+        }
+        $results = array_keys($results, max($results));
+        return $results[0];
+    }
+
+    private function csv_to_array($csv, $delimiter = ';', $header_line = true)
+    {
+        // CSV from external sources may have Unix or DOS line endings. str_getcsv()
+        // requires that the "delimiter" be one character only, so we don't want
+        // to pass the DOS line ending \r\n to that function. So first we ensure
+        // that we have Unix line endings only.
+        $csv = str_replace("\r\n", "\n", $csv);
+
+        // Read the CSV lines into a numerically indexed array. Use str_getcsv(),
+        // rather than splitting on all linebreaks, as fields may themselves contain
+        // linebreaks.
+        $all_lines = str_getcsv($csv, "\n");
+        if (!$all_lines) {
+            return false;
+        }
+
+        $csv = array_map(function (&$line) use ($delimiter) {
+            return str_getcsv($line, $delimiter);
+        }, $all_lines);
+
+        if ($header_line) {
+            // Use the first row's values as keys for all other rows.
+            array_walk($csv, function (&$a) use ($csv) {
+                $a = array_combine($csv[0], $a);
+            });
+            // Remove column header row.
+            // array_shift($csv);
+        }
+
+        return $csv;
     }
 
 }

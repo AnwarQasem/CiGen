@@ -65,7 +65,7 @@ class BaseModel extends Model
      */
     public function callback_after_find($row)
     {
-        if($row['method'] === 'first') {
+        if ($row['method'] === 'first') {
             foreach ($row['data'] as $key => $value) {
 
                 if (in_array($key, $this->removeFields)) {
@@ -78,7 +78,7 @@ class BaseModel extends Model
             }
         }
 
-        if($row['method'] !== 'first') {
+        if ($row['method'] !== 'first') {
             for ($i = 0; $i < count($row['data']); $i++) {
                 foreach ($row['data'][$i] as $key => $value) {
 
@@ -234,11 +234,16 @@ class BaseModel extends Model
     /**
      * Set remove Fields
      *
-     * @param array $removeFields
+     * @param $removeFields
+     * @return void
      */
-    public function setRemoveFields(string $removeFields): void
+    public function setRemoveFields($removeFields): void
     {
-        $this->removeFields[] = $removeFields;
+        if (is_array($removeFields)) {
+            $this->removeFields = $removeFields;
+        } else {
+            $this->removeFields[] = $removeFields;
+        }
     }
 
     /**
@@ -344,9 +349,8 @@ class BaseModel extends Model
     /**
      * Before Insert Callback
      *
-     * @param array $beforeInsert
      */
-    public function setBeforeInsert(string $beforeInsert): void
+    public function setBeforeInsert($beforeInsert)
     {
         $this->beforeInsert[] = $beforeInsert;
     }
