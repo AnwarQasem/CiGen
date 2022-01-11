@@ -3,7 +3,7 @@
     "description": "Code generates following files in CodeIgniter 4 : models, controllers, routes.",
     "keywords": ["codeigniter 4", "models", "controller", "generator"],
     "license": "MIT",
-    "version": "0.9",
+    "version": "1.0.0",
     "authors": [
         {
             "name": "Anwar Subhi",
